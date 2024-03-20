@@ -1,4 +1,5 @@
 import gleam/io
+import gleam/list
 import gleam/string
 import gleam/int
 import gleam/otp/actor
@@ -7,21 +8,15 @@ import gleam/erlang.{get_line}
 import renderer.{handle_message}
 
 pub fn main() {
+  let columns = 9
   let assert Ok(actor) =
     actor.start(
       renderer.Board(
-        [
-          renderer.Empty,
-          renderer.Food,
-          renderer.Empty,
-          renderer.Empty,
-          renderer.Snake,
-          renderer.Empty,
-          renderer.Empty,
-          renderer.Snake,
-          renderer.Empty,
-        ],
-        3,
+        {
+          list.range(0, columns * columns - 1)
+          |> list.map(fn(_) { renderer.Empty })
+        },
+        columns,
       ),
       handle_message,
     )
