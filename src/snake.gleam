@@ -4,15 +4,24 @@ import gleam/int
 import gleam/otp/actor
 import gleam/erlang/process
 import gleam/erlang.{get_line}
-import board.{handle_message}
+import renderer.{handle_message}
 
 pub fn main() {
   let assert Ok(actor) =
     actor.start(
-      board.GameState(
-        board_size: board.Vector2(x: 3, y: 3),
-        snake: [board.Vector2(x: 1, y: 1), board.Vector2(x: 1, y: 2)],
-        tail_direction: board.Down,
+      renderer.Board(
+        [
+          renderer.Empty,
+          renderer.Food,
+          renderer.Empty,
+          renderer.Empty,
+          renderer.Snake,
+          renderer.Empty,
+          renderer.Empty,
+          renderer.Snake,
+          renderer.Empty,
+        ],
+        3,
       ),
       handle_message,
     )
@@ -23,8 +32,8 @@ pub fn main() {
 
 fn game_loop(actor, count: Int) {
   // Render to screen
+  process.call(actor, renderer.Render, 1000 / 60)
   io.println(string.append("Render #", int.to_string(count)))
-  process.call(actor, board.Render, 1000 / 60)
 
   // Obtain user input
   let assert Ok(value) = get_line("Input (Press q to exit): ")
@@ -32,8 +41,8 @@ fn game_loop(actor, count: Int) {
   // Call next game loop if it shouldn't exit
   case value {
     "q\n" -> {
-      io.println("Endindg game...")
-      process.send(actor, board.Stop)
+      io.println("Ending game...")
+      process.send(actor, renderer.Stop)
     }
     _ -> game_loop(actor, count + 1)
   }
