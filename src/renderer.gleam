@@ -4,7 +4,8 @@ import gleam/io
 import gleam/erlang/process.{type Subject}
 import gleam/otp/actor
 import gleam_community/ansi
-import model.{type Vector2}
+import model
+import lib.{default_snake_body_pos, default_snake_head_pos}
 
 /// Represents all possible states of a board cell
 pub type BoardCell {
@@ -23,29 +24,39 @@ pub fn board_cell_to_string(cell: BoardCell) -> String {
   }
 }
 
-/// Possible messages to the Renderer
-pub type RendererMessages {
-  Render(client: Subject(Nil))
-  Stop
-}
-
 /// Represents the Board to render to the screen
 /// It's the state of the actor `Renderer`
 pub type Board {
   Board(cells: List(BoardCell), columns: Int)
 }
 
+/// Possible messages to the Renderer
+pub type RendererMessages {
+  Render(client: Subject(Nil), board: Board)
+  Stop
+}
+
+/// Represents the state of the renderer
+pub type RendererState {
+  RendererState(frame_count: Int)
+}
+
+/// Generates a starting default state for the actor
+pub fn generate_default_state() {
+  RendererState(0)
+}
+
 /// Function that handles every message passed to the Board actor
 pub fn handle_message(
   message: RendererMessages,
-  state: Board,
-) -> actor.Next(RendererMessages, Board) {
+  state: RendererState,
+) -> actor.Next(RendererMessages, RendererState) {
   case message {
     Stop -> actor.Stop(process.Normal)
-    Render(client) -> {
-      print_board(state)
+    Render(client, board) -> {
+      print_board(board)
       process.send(client, Nil)
-      actor.continue(state)
+      actor.continue(RendererState(state.frame_count + 1))
     }
   }
 }
