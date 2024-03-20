@@ -1,24 +1,25 @@
-import gleam/string
 import gleam/list
 import gleam/string_builder
-import gleam/int
 import gleam/io
 import gleam/erlang/process.{type Subject}
 import gleam/otp/actor
+import gleam_community/ansi
 import model.{type Vector2}
 
 /// Represents all possible states of a board cell
 pub type BoardCell {
   Empty
-  Snake
+  SnakeHead
+  SnakeBody
   Food
 }
 
 pub fn board_cell_to_string(cell: BoardCell) -> String {
   case cell {
     Empty -> "| "
-    Snake -> "|#"
-    Food -> "|*"
+    SnakeHead -> "|" <> ansi.green("$")
+    SnakeBody -> "|#"
+    Food -> "|" <> ansi.red("*")
   }
 }
 
