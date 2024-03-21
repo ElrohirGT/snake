@@ -87,8 +87,8 @@ fn parse_command(command: String) -> Result(Commands, Nil) {
     "q\n" -> Ok(Quit)
     "k\n" | "w\n" -> Ok(MoveSnake(model.Up))
     "j\n" | "s\n" -> Ok(MoveSnake(model.Down))
-    "h\n" | "d\n" -> Ok(MoveSnake(model.Left))
-    "l\n" | "a\n" -> Ok(MoveSnake(model.Right))
+    "h\n" | "a\n" -> Ok(MoveSnake(model.Left))
+    "l\n" | "d\n" -> Ok(MoveSnake(model.Right))
     _ -> Error(Nil)
   }
 }

@@ -89,6 +89,7 @@ pub fn handle_message(
     Stop -> actor.Stop(process.Normal)
     Movement(client, direction) -> {
       let assert Ok(head) = list.first(state.snake)
+      let assert Ok(neck) = list.at(state.snake, 1)
       let direction_vector = model.to_vector(direction)
       let head_future = model.add(head, direction_vector)
 
@@ -96,9 +97,10 @@ pub fn handle_message(
         [
           between(head_future.x, -1, state.board_size.x),
           between(head_future.y, -1, state.board_size.y),
+          head_future == neck,
         ]
       {
-        [True, True] -> {
+        [True, True, False] -> {
           let moved_snake =
             move_snake(state.snake, model.contrary(direction), [])
           let new_state =
@@ -116,8 +118,12 @@ pub fn handle_message(
           process.send(client, response)
           actor.continue(new_state)
         }
+        [_, _, True] -> {
+          process.send(client, Error(BackwardsMovement))
+          actor.continue(state)
+        }
         _ -> {
-          actor.send(client, Error(OutOfBounds))
+          process.send(client, Error(OutOfBounds))
           actor.continue(state)
         }
       }
