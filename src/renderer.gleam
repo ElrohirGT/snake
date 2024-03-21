@@ -7,6 +7,8 @@ import gleam_community/ansi
 import model
 import lib.{default_snake_body_pos, default_snake_head_pos}
 
+const asci_escape_character = "\u{001b}"
+
 /// Represents all possible states of a board cell
 pub type BoardCell {
   Empty
@@ -63,6 +65,8 @@ pub fn handle_message(
 
 fn print_board(board: Board) {
   let columns = board.columns
+  let clear_screen_code =
+    asci_escape_character <> "[2J" <> asci_escape_character <> "[2H"
   let render_cell_to_screen = fn(cell: BoardCell, idx: Int) {
     let suffix = case { idx + 1 } % columns {
       0 -> "|\n"
@@ -73,8 +77,10 @@ fn print_board(board: Board) {
     |> string_builder.to_string()
   }
 
+  ansi.bg_red
   board.cells
   |> list.index_map(render_cell_to_screen)
+  |> list.prepend(clear_screen_code)
   |> string_builder.from_strings()
   |> string_builder.to_string()
   |> io.println()
