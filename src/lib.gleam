@@ -15,3 +15,13 @@ pub fn default_snake_body_pos(columns: Int) -> Vector2 {
   let assert model.Vector2(x, y) = default_snake_head_pos(columns)
   model.Vector2(x, y + 1)
 }
+
+/// Checks if a number is between a range
+pub fn between(number: Int, min: Int, max: Int) {
+  number < max && number > min
+}
+
+/// Checks if a number is between a range (inclusive)
+pub fn between_inc(number: Int, min: Int, max: Int) {
+  number <= max && number >= min
+}

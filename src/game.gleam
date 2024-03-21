@@ -3,7 +3,7 @@ import gleam/erlang/process.{type Subject}
 import gleam/list
 import model.{type SnakeMovement, type Vector2, add}
 import renderer.{type Board}
-import lib.{default_snake_body_pos, default_snake_head_pos}
+import lib.{between, default_snake_body_pos, default_snake_head_pos}
 
 /// Represents a set of successful response the engine can respond
 /// when a movement is processed
@@ -88,7 +88,66 @@ pub fn handle_message(
   case message {
     Stop -> actor.Stop(process.Normal)
     Movement(client, direction) -> {
-      todo
+      let assert Ok(head) = list.first(state.snake)
+      let direction_vector = model.to_vector(direction)
+      let head_future = model.add(head, direction_vector)
+
+      case
+        [
+          between(head_future.x, -1, state.board_size.x),
+          between(head_future.y, -1, state.board_size.y),
+        ]
+      {
+        [True, True] -> {
+          let moved_snake =
+            move_snake(state.snake, model.contrary(direction), [])
+          let new_state =
+            GameState(
+              state.board_size,
+              moved_snake,
+              state.food,
+              state.tail_direction,
+            )
+          let response =
+            new_state
+            |> game_state_to_board
+            |> Render
+            |> Ok
+          process.send(client, response)
+          actor.continue(new_state)
+        }
+        _ -> {
+          actor.send(client, Error(OutOfBounds))
+          actor.continue(state)
+        }
+      }
+    }
+  }
+}
+
+fn move_snake(
+  snake: List(Vector2),
+  previous_direction: SnakeMovement,
+  moved_snake: List(Vector2),
+) -> List(Vector2) {
+  case snake {
+    [] -> moved_snake
+    [first, ..rest] -> {
+      let moved_part =
+        previous_direction
+        |> model.contrary
+        |> model.to_vector
+        |> model.add(first)
+      let moved_snake = list.append(moved_snake, [moved_part])
+      case list.first(rest) {
+        Ok(next_part) -> {
+          let assert Ok(current_direction) =
+            model.subtract(next_part, first)
+            |> model.to_direction()
+          move_snake(rest, current_direction, moved_snake)
+        }
+        Error(_) -> moved_snake
+      }
     }
   }
 }
