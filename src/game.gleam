@@ -98,6 +98,10 @@ pub fn handle_message(
       let future_has_food =
         state.food
         |> list.find(fn(a) { a == head_future })
+      let future_has_snake =
+        state.snake
+        |> list.find(fn(a) { a == head_future })
+        |> result.is_ok
 
       let #(new_snake, updated_foods) = case future_has_food {
         Ok(food_pos) -> {
@@ -129,9 +133,10 @@ pub fn handle_message(
           between(head_future.x, -1, state.board_size.x),
           between(head_future.y, -1, state.board_size.y),
           head_future == neck,
+          future_has_snake,
         ]
       {
-        [True, True, False] -> {
+        [True, True, False, False] -> {
           let #(moved_snake, tail_growth_direction) =
             move_snake(new_snake, direction, #([], model.Up))
           let new_state =
@@ -149,7 +154,11 @@ pub fn handle_message(
           process.send(client, response)
           actor.continue(new_state)
         }
-        [_, _, True] -> {
+        [_, _, False, True] -> {
+          process.send(client, Ok(GameOver("You ate yourself!")))
+          actor.continue(state)
+        }
+        [_, _, True, _] -> {
           process.send(client, Error(BackwardsMovement))
           actor.continue(state)
         }
