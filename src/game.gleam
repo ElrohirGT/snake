@@ -1,6 +1,9 @@
 import gleam/otp/actor
 import gleam/erlang/process.{type Subject}
 import gleam/list
+import gleam/int
+import gleam/io
+import gleam/result
 import model.{type SnakeMovement, type Vector2, add}
 import renderer.{type Board}
 import lib.{between, default_snake_body_pos, default_snake_head_pos}
@@ -38,7 +41,7 @@ pub type GameState {
     board_size: Vector2,
     snake: List(Vector2),
     food: List(Vector2),
-    tail_direction: SnakeMovement,
+    growth_direction: SnakeMovement,
   )
 }
 
@@ -50,7 +53,7 @@ pub fn generate_default_state(columns: Int) -> GameState {
     board_size: model.Vector2(columns, columns),
     snake: [snake_head, snake_body],
     food: [add(snake_head, model.Vector2(0, -2))],
-    tail_direction: model.Up,
+    growth_direction: model.Down,
   )
 }
 
@@ -92,6 +95,34 @@ pub fn handle_message(
       let assert Ok(neck) = list.at(state.snake, 1)
       let direction_vector = model.to_vector(direction)
       let head_future = model.add(head, direction_vector)
+      let future_has_food =
+        state.food
+        |> list.find(fn(a) { a == head_future })
+
+      let #(new_snake, updated_foods) = case future_has_food {
+        Ok(food_pos) -> {
+          let append_to_end = fn(a, list) { list.append(list, [a]) }
+          let assert Ok(tail) = list.last(state.snake)
+          let new_snake =
+            state.growth_direction
+            |> model.to_vector
+            |> model.add(tail)
+            |> append_to_end(state.snake)
+          let new_food =
+            model.Vector2(
+              int.random(state.board_size.x),
+              int.random(state.board_size.y),
+            )
+
+          #(
+            new_snake,
+            state.food
+              |> list.filter(fn(a) { a != food_pos })
+              |> list.append([new_food]),
+          )
+        }
+        Error(Nil) -> #(state.snake, state.food)
+      }
 
       case
         [
@@ -101,14 +132,14 @@ pub fn handle_message(
         ]
       {
         [True, True, False] -> {
-          let moved_snake =
-            move_snake(state.snake, model.contrary(direction), [])
+          let #(moved_snake, tail_growth_direction) =
+            move_snake(new_snake, direction, #([], model.Up))
           let new_state =
             GameState(
               state.board_size,
               moved_snake,
-              state.food,
-              state.tail_direction,
+              updated_foods,
+              tail_growth_direction,
             )
           let response =
             new_state
@@ -133,26 +164,26 @@ pub fn handle_message(
 
 fn move_snake(
   snake: List(Vector2),
-  previous_direction: SnakeMovement,
-  moved_snake: List(Vector2),
-) -> List(Vector2) {
+  previous_movement: SnakeMovement,
+  result: #(List(Vector2), SnakeMovement),
+) -> #(List(Vector2), SnakeMovement) {
   case snake {
-    [] -> moved_snake
+    [] -> result
     [first, ..rest] -> {
       let moved_part =
-        previous_direction
-        |> model.contrary
+        previous_movement
         |> model.to_vector
         |> model.add(first)
-      let moved_snake = list.append(moved_snake, [moved_part])
+      let moved_snake = list.append(result.0, [moved_part])
       case list.first(rest) {
         Ok(next_part) -> {
           let assert Ok(current_direction) =
-            model.subtract(next_part, first)
+            model.subtract(first, next_part)
             |> model.to_direction()
-          move_snake(rest, current_direction, moved_snake)
+          let result = #(moved_snake, model.contrary(current_direction))
+          move_snake(rest, current_direction, result)
         }
-        Error(_) -> moved_snake
+        Error(_) -> #(moved_snake, result.1)
       }
     }
   }
