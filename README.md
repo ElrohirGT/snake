@@ -1,20 +1,17 @@
-# snake
+# Snake
+Las dependencias del proyecto son:
+- Gleam
+- Erlang
 
-[![Package Version](https://img.shields.io/hexpm/v/snake)](https://hex.pm/packages/snake)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/snake/)
-
-```sh
-gleam add snake
-```
-```gleam
-import snake
-
-pub fn main() {
-  // TODO: An example of the project in use
-}
+Si se tiene Nix instalado con flakes se puede utilizar, este comando crea una shell con las dependencias instaladas:
+```bash
+nix develop
 ```
 
-Further documentation can be found at <https://hexdocs.pm/snake>.
+Una vez se tenga instaladas las dependencias para compilar y correr el proyecto:
+```bash
+gleam run
+```
 
 ## Development
 
